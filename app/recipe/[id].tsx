@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Text, View } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useFoodie } from '@/context/FoodieContext';
-import { MOCK_RECIPES } from '@/lib/mockRecipes';
+import { getRecipe } from '@/lib/recipeRegistry';
 import { useColorScheme } from '@/components/useColorScheme';
 
 export default function RecipeDetailScreen() {
@@ -16,7 +16,7 @@ export default function RecipeDetailScreen() {
   const tint = Colors[colorScheme ?? 'light'].tint;
   const border = colorScheme === 'dark' ? '#333' : '#e8e8e8';
 
-  const recipe = id ? MOCK_RECIPES[id] : undefined;
+  const recipe = id ? getRecipe(id) : undefined;
 
   if (!recipe) {
     return (

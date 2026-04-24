@@ -14,6 +14,7 @@ import { fetchAiWeekPlan } from '@/lib/aiMealPlan';
 import { getLowStockItems } from '@/lib/lowStock';
 import { scheduleMealReminders } from '@/lib/notifications';
 import { buildLocalWeekPlan, type WeekMealPlanDay } from '@/lib/suggestMeals';
+import { getRecipe } from '@/lib/recipeRegistry';
 import { pullPantryRemote, pushPantryRemote } from '@/lib/syncPantry';
 import {
   type AppPreferences,
@@ -108,6 +109,7 @@ type FoodieContextValue = {
   reminders: ReminderSchedule;
   setReminders: (next: ReminderSchedule) => void;
   markMealApply: (selections: { pantryItemId: string; deduct: number }[]) => void;
+  markMealCooked: (recipeId: string) => void;
   loading: boolean;
   syncState: SyncState;
   mealPlanError: string | null;
@@ -259,6 +261,18 @@ export function FoodieProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const markMealCooked = useCallback((recipeId: string) => {
+    const recipe = getRecipe(recipeId);
+    if (!recipe) return;
+    setPantry((prev) => {
+      const usedNames = new Set(recipe.ingredientsUsed.map((n) => n.toLowerCase()));
+      return prev.map((item) => {
+        if (!usedNames.has(item.name.toLowerCase())) return item;
+        return { ...item, quantity: Math.max(0, item.quantity - 1) };
+      });
+    });
+  }, []);
+
   const addShoppingItem = useCallback((name: string, note?: string | null) => {
     const n = name.trim();
     if (!n) return;
@@ -326,6 +340,7 @@ export function FoodieProvider({ children }: { children: React.ReactNode }) {
       reminders,
       setReminders,
       markMealApply,
+      markMealCooked,
       loading,
       syncState,
       mealPlanError,
@@ -349,6 +364,7 @@ export function FoodieProvider({ children }: { children: React.ReactNode }) {
       reminders,
       setReminders,
       markMealApply,
+      markMealCooked,
       loading,
       syncState,
       mealPlanError,

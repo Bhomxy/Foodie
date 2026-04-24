@@ -1,4 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import {
   FlatList,
@@ -29,22 +30,18 @@ export default function FoodstuffScreen() {
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [unit, setUnit] = useState<FoodUnit>(DEFAULT_FOOD_UNIT);
-  const [expiresAt, setExpiresAt] = useState('');
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
 
   const onAdd = () => {
     const q = parseFloat(quantity);
     if (!name.trim() || Number.isNaN(q)) return;
-    addPantryItem({
-      name: name.trim(),
-      quantity: q,
-      unit,
-      expiresAt: expiresAt.trim() ? expiresAt.trim() : null,
-    });
+    addPantryItem({ name: name.trim(), quantity: q, unit, expiresAt, parLevel: null });
     setName('');
     setQuantity('1');
     setUnit(DEFAULT_FOOD_UNIT);
-    setExpiresAt('');
+    setExpiresAt(null);
   };
 
   return (
@@ -130,13 +127,43 @@ export default function FoodstuffScreen() {
                   <FontAwesome name="chevron-down" size={14} color={tint} />
                 </Pressable>
               </View>
-              <TextInput
-                placeholder="Expiry YYYY-MM-DD (optional)"
-                placeholderTextColor="#888"
-                value={expiresAt}
-                onChangeText={setExpiresAt}
-                style={[styles.input, { borderColor: border, color: textColor }]}
-              />
+              <Pressable
+                onPress={() => setDatePickerOpen(true)}
+                style={({ pressed }) => [
+                  styles.input,
+                  styles.dateField,
+                  { borderColor: border, opacity: pressed ? 0.8 : 1 },
+                ]}>
+                <Text style={[styles.dateFieldText, { color: expiresAt ? textColor : '#888' }]}>
+                  {expiresAt ?? 'Expiry date (optional)'}
+                </Text>
+                {expiresAt ? (
+                  <Pressable
+                    onPress={() => setExpiresAt(null)}
+                    hitSlop={10}>
+                    <FontAwesome name="times-circle" size={16} color="#888" />
+                  </Pressable>
+                ) : (
+                  <FontAwesome name="calendar" size={15} color="#888" />
+                )}
+              </Pressable>
+              {datePickerOpen && (
+                <DateTimePicker
+                  value={expiresAt ? new Date(expiresAt + 'T12:00:00') : new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                  minimumDate={new Date()}
+                  onChange={(_e, date) => {
+                    setDatePickerOpen(Platform.OS === 'ios');
+                    if (date) {
+                      const y = date.getFullYear();
+                      const m = String(date.getMonth() + 1).padStart(2, '0');
+                      const d = String(date.getDate()).padStart(2, '0');
+                      setExpiresAt(`${y}-${m}-${d}`);
+                    }
+                  }}
+                />
+              )}
               <Pressable
                 onPress={onAdd}
                 style={({ pressed }) => [
@@ -212,6 +239,13 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   unitFieldText: { fontSize: 16 },
+  dateField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  dateFieldText: { fontSize: 16 },
   addBtn: { borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   addBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   sectionTitle: { fontSize: 17, fontWeight: '600', marginBottom: 12 },
